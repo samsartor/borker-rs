@@ -19,3 +19,5 @@ borker-rs = { path = "../.." }
 wasm-bindgen = { version = "0.2.45", features = ["serde-serialize", "nightly"] }
 console_error_panic_hook = { version = "0.1.6", optional = true }
 wee_alloc = { version = "0.4.4", optional = true }
+js-sys = "0.3.22"
+failure = "0.1.5"

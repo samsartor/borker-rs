@@ -15,18 +15,18 @@ pub const MAGIC: [u8; 2] = [0xD0, 0x6E];
 
 #[derive(Debug, Serialize)]
 pub struct UtxoId {
-    txid: String,
-    index: u32,
+    pub txid: String,
+    pub index: u32,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NewUtxo {
-    txid: String,
-    index: u32,
-    address: String,
-    value: u64,
-    raw: String,
+    pub txid: String,
+    pub index: u32,
+    pub address: String,
+    pub value: u64,
+    pub raw: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -53,25 +53,25 @@ pub enum BorkType {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BorkTxData<'a> {
-    time: &'a DateTime<Utc>,
-    txid: String,
+    pub time: &'a DateTime<Utc>,
+    pub txid: String,
     #[serde(rename = "type")]
-    bork_type: BorkType,
-    nonce: Option<u8>,
-    index: Option<u8>,
-    reference_id: Option<String>,
-    content: Option<String>,
-    sender_address: String,
-    recipient_address: Option<String>,
-    mentions: Vec<String>,
+    pub bork_type: BorkType,
+    pub nonce: Option<u8>,
+    pub index: Option<u8>,
+    pub reference_id: Option<String>,
+    pub content: Option<String>,
+    pub sender_address: String,
+    pub recipient_address: Option<String>,
+    pub mentions: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct NewBorkData {
     #[serde(rename = "type")]
-    bork_type: BorkType,
-    content: Option<String>,
-    reference_id: Option<String>,
+    pub bork_type: BorkType,
+    pub content: Option<String>,
+    pub reference_id: Option<String>,
 }
 
 pub enum NewBork {

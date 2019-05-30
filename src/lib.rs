@@ -17,16 +17,16 @@ pub use self::wallet::{ChildWallet, Wallet};
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BlockData<'a> {
-    borker_txs: Vec<protocol::BorkTxData<'a>>,
-    spent: Vec<protocol::UtxoId>,
-    created: Vec<protocol::NewUtxo>,
+    pub borker_txs: Vec<protocol::BorkTxData<'a>>,
+    pub spent: Vec<protocol::UtxoId>,
+    pub created: Vec<protocol::NewUtxo>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Output {
-    address: String,
-    value: u64,
+    pub address: String,
+    pub value: u64,
 }
 impl Output {
     pub fn as_tup(&self) -> (&str, u64) {
@@ -41,8 +41,7 @@ pub enum Network {
     Bitcoin,
 }
 
-#[allow(non_snake_case)]
-pub fn processBlock<T>(block: &[u8], network: Network, process: impl FnOnce(&BlockData) -> Result<T, Error>) -> Result<T, Error> {
+pub fn process_block<T>(block: &[u8], network: Network, process: impl FnOnce(&BlockData) -> Result<T, Error>) -> Result<T, Error> {
     use bitcoin::consensus::encode::Decodable;
 
     let mut cur = std::io::Cursor::new(&block);
