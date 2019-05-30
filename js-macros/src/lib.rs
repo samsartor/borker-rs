@@ -1,8 +1,8 @@
 extern crate proc_macro;
 
 use proc_macro::{TokenStream};
-use proc_macro2::{TokenStream as TokenStream2, Span};
-use quote::{ToTokens, quote};
+use proc_macro2::{TokenStream as TokenStream2};
+use quote::{quote};
 
 use syn::parse::{Parse, ParseStream, Result as SynResult};
 use syn::{
@@ -47,10 +47,9 @@ impl Parse for ClassArg {
 }
 
 impl ClassArg {
-    fn getter_param(&self) -> TokenStream2 {
-        let name = &self.name;
+    fn getter_return(&self) -> TokenStream2 {
         let ty = &self.ty;
-        quote! { #name: #ty }
+        quote! { #ty }
     }
 
     fn setter_param(&self) -> TokenStream2 {
@@ -69,18 +68,36 @@ impl ClassArg {
         }
     }
 
-    fn js_type(&self) -> TokenStream2 {
+    fn bindgen(&self, class_name: &Ident) -> TokenStream2 {
+        let setter_name = Ident::new(&format!("set_{}", self.name), self.name.span());
+        let getter_name = &self.name;
+        let getter_return= self.getter_return();
+        let setter_param = self.setter_param();
+        quote! {
+            #[wasm_bindgen(method, getter)]
+            pub fn #getter_name(_: &#class_name) -> #getter_return;
+
+            #[wasm_bindgen(method, setter)]
+            pub fn #setter_name(_: &#class_name, #setter_param);
+        }
+    }
+
+    fn ts_type(&self) -> TokenStream2 {
         if self.ty == parse_quote! { String } {
             quote! { string }
         } else if self.ty == parse_quote! { Vec<u8> } {
             quote! { Uint8Array }
+        } else if self.ty == parse_quote! { u8 } {
+            quote! { number }
         } else {
             quote! { any }
         }
     }
 
-    fn bindgen(&self, class_name: &Ident) -> TokenStream2 {
-        quote! {}
+    fn ts(&self) -> TokenStream2 {
+        let name = &self.name;
+        let ty = self.ts_type();
+        quote! { #name : #ty }
     }
 }
 
@@ -118,15 +135,15 @@ impl Parse for ClassFunction {
 }
 
 impl ClassFunction {
-    fn bindgen(&self, class_name: &Ident) -> TokenStream2 {
-        let mut bindgen_args = TokenStream2::empty();
-        let mut name = self.name.clone();
+    fn bindgen(&self, class_name: &Ident, abstr: bool) -> TokenStream2 {
         let args = self.args.iter().map(|arg| {
             let name = &arg.name;
             let ty = &arg.ty;
             quote! { #name: #ty }
         });
+        let name = &self.name;
         if name.to_string() == "constructor" {
+            if abstr { return TokenStream2::new(); }
             quote! {
                 #[wasm_bindgen(constructor)]
                 pub fn new(#(#args),*) -> #class_name;
@@ -138,6 +155,25 @@ impl ClassFunction {
             }
         }
 
+    }
+
+
+    fn js(&self) -> TokenStream2 {
+        let name = &self.name;
+        let args = self.args.iter().map(|arg| &arg.name);
+        let body = self.body.as_ref().expect("function must have js body");
+        quote! {
+            #name(#(#args),*) {
+                #body
+            }
+        }
+    }
+
+    fn ts(&self, abstr: bool) -> TokenStream2 {
+        let name = &self.name;
+        if name.to_string() == "constructor" && abstr { return TokenStream2::new(); }
+        let args = self.args.iter().map(ClassArg::ts);
+        quote! { #name(#(#args),*); }
     }
 }
 
@@ -158,16 +194,31 @@ impl Parse for ClassItem {
 }
 
 impl ClassItem {
-    fn bindgen(&self, class_name: &Ident) -> TokenStream2 {
+    fn bindgen(&self, class_name: &Ident, abstr: bool) -> TokenStream2 {
         match self {
             ClassItem::Arg(arg) => arg.bindgen(class_name),
-            ClassItem::Func(func) => func.bindgen(class_name),
+            ClassItem::Func(func) => func.bindgen(class_name, abstr),
+        }
+    }
+
+    fn js(&self) -> TokenStream2 {
+        match self {
+            ClassItem::Arg(_) => TokenStream2::new(),
+            ClassItem::Func(func) => func.js(),
+        }
+    }
+
+    fn ts(&self, abstr: bool) -> TokenStream2 {
+        match self {
+            ClassItem::Arg(arg) => arg.ts(),
+            ClassItem::Func(func) => func.ts(abstr),
         }
     }
 }
 
 #[derive(Debug)]
 struct ClassDef {
+    abstr: Option<token::Abstract>,
     class: kw::class,
     class_name: Ident,
     extends: Option<kw::extends>,
@@ -178,6 +229,10 @@ struct ClassDef {
 
 impl Parse for ClassDef {
     fn parse(input: ParseStream) -> SynResult<Self> {
+        let mut abstr = None;
+        if input.peek(token::Abstract) {
+            abstr = Some(input.parse()?);
+        }
         let class = input.parse()?;
         let class_name = input.parse()?;
         let mut extends = None;
@@ -191,6 +246,7 @@ impl Parse for ClassDef {
         let body = Punctuated::parse_terminated(&body_tokens)?;
 
         Ok(ClassDef {
+            abstr,
             class,
             class_name,
             extends,
@@ -204,16 +260,47 @@ impl Parse for ClassDef {
 impl ClassDef {
     fn bindgen(&self) -> TokenStream2 {
         let name = &self.class_name;
-        let mut bindgen_args = TokenStream2::empty();
+        let mut bindgen_args = TokenStream2::new();
         if let Some(ref base) = self.base_class {
             bindgen_args = quote! { extends = #base };
         }
-        let gens = self.body.iter().map(|item| item.bindgen(name));
+        let gens = self.body.iter().map(|item| item.bindgen(name, self.abstr.is_some()));
         quote! {
             #[wasm_bindgen(#bindgen_args)]
             pub type #name;
 
             #(#gens)*
+        }
+    }
+
+    fn js(&self) -> TokenStream2 {
+        let name = &self.class_name;
+        let mut extends = TokenStream2::new();
+        if let Some(ref base) = self.base_class {
+            extends = quote! { extends #base };
+        }
+        let jss = self.body.iter().map(|item| item.js());
+        quote! {
+            class #name #extends {
+                #(#jss)*
+            }
+        }
+    }
+
+    fn ts(&self) -> TokenStream2 {
+        let class_name = &self.class_name;
+        let mut def = quote! { class #class_name };
+        if let Some(ref base) = self.base_class {
+            def = quote! { #def extends #base };
+        }
+        if self.abstr.is_some() {
+            def = quote! { abstract #def };
+        }
+        let tss = self.body.iter().map(|item| item.ts(self.abstr.is_some()));
+        quote! {
+            #def {
+                #(#tss;)*
+            }
         }
     }
 }
@@ -234,7 +321,16 @@ impl Parse for ClassInput {
 impl ClassInput {
     fn bindgen(&self) -> TokenStream2 {
         let defs = self.defs.iter().map(ClassDef::bindgen);
+        let jss = self.defs.iter().map(ClassDef::js);
+        let js = (quote! { #(#jss)* }).to_string();
+        let tss = self.defs.iter().map(ClassDef::ts);
+        let ts = (quote! { #(#tss)* }).to_string();
         quote! {
+            #[wasm_bindgen(typescript_custom_section)]
+            const __TS_APPEND: &'static str = #ts;
+
+            #[wasm_bindgen(inline_js = #js)]
+
             #[wasm_bindgen]
             extern "C" {
                 #(#defs)*

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 mod big_array;
 #[macro_use]
 mod macros;
-mod protocol;
+pub mod protocol;
 mod wallet;
 
 pub use self::wallet::{ChildWallet, Wallet};
@@ -42,10 +42,9 @@ pub enum Network {
 }
 
 #[allow(non_snake_case)]
-pub fn processBlock<T>(block: String, network: Network, process: impl FnOnce(&BlockData) -> Result<T, Error>) -> Result<T, Error> {
+pub fn processBlock<T>(block: &[u8], network: Network, process: impl FnOnce(&BlockData) -> Result<T, Error>) -> Result<T, Error> {
     use bitcoin::consensus::encode::Decodable;
 
-    let block = hex::decode(&block)?;
     let mut cur = std::io::Cursor::new(&block);
     let block_header: bitcoin::BlockHeader = Decodable::consensus_decode(&mut cur)?;
     match network {
