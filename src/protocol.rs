@@ -7,6 +7,7 @@ use crate::wallet::addr_to_script;
 use crate::wallet::is_p2pkh;
 use crate::wallet::pubkey_hash_to_addr;
 use crate::wallet::pubkey_to_addr;
+use serde::{Deserialize, Serialize};
 use chrono::DateTime;
 use chrono::Utc;
 

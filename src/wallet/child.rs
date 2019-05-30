@@ -11,6 +11,7 @@ use ripemd160::Digest;
 use ripemd160::Ripemd160;
 use secp256k1::curve::Scalar;
 use secp256k1::{PublicKey, SecretKey};
+use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 
 #[derive(Clone)]

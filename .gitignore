@@ -2,5 +2,5 @@
 **/*.rs.bk
 /.wallet
 /bin
-/pkg
-/wasm-pack.log
+/js/wasm-pack.log
+/js/pkg

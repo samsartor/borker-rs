@@ -10,6 +10,7 @@ use pbkdf2::pbkdf2;
 use ripemd160::Digest;
 use ripemd160::Ripemd160;
 use sha2::Sha256;
+use serde::{Deserialize, Serialize};
 
 pub type HmacSha512 = hmac::Hmac<sha2::Sha512>;
 
