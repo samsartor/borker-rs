@@ -2,5 +2,7 @@
 **/*.rs.bk
 /.wallet
 /bin
-/js/wasm-pack.log
-/js/pkg
+/js/node_modules
+/js/package-lock.json
+/js/bindings/wasm-pack.log
+/js/dist/

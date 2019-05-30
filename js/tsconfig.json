@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "module": "commonjs",
+    "outDir": "./dist/",
+    "declaration": true,
+    "lib": ["es2016", "dom"],
+    "rootDir": "./"
+  },
+  "files": [
+    "./index.ts"
+  ],
+  "include": [
+    "./bindings/pkg-*/*"
+  ]
+}

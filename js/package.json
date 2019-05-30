@@ -1,0 +1,30 @@
+{
+  "name": "borker",
+  "version": "0.2.0",
+  "description": "",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "npm run build:rs && npm run build:ts",
+    "build:ts": "tsc",
+    "build:rs": "npm run build:rs-web && npm run build:rs-node && mkdir -p dist/bindings/ && cp -r bindings/pkg-* dist/bindings/",
+    "build:rs-web": "wasm-pack build bindings --out-name index --out-dir pkg-web --target web",
+    "build:rs-node": "wasm-pack build bindings --out-name index --out-dir pkg-node --target nodejs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/borkerprotocol/borker-rs.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/borkerprotocol/borker-rs/issues"
+  },
+  "homepage": "https://github.com/borkerprotocol/borker-rs#readme",
+  "devDependencies": {
+    "typescript": "^3.5.1",
+    "wasm-pack-npm": "^0.1.3"
+  },
+  "dependencies": { }
+}

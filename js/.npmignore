@@ -1,0 +1,3 @@
+lib/
+bindings/
+dist/**/package.json
